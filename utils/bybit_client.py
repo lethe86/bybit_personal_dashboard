@@ -15,9 +15,8 @@ API_KEY = os.getenv('BYBIT_API_KEY') or os.getenv('API_KEY')
 API_SECRET = os.getenv('BYBIT_API_SECRET') or os.getenv('API_SECRET')
 TESTNET = os.getenv('BYBIT_TESTNET', 'true').lower() == 'true'
 
-print(f"DEBUG: Loaded API Key: {API_KEY[:4] if API_KEY else 'None'}")
-print(f"DEBUG: Loaded API Secret: {API_SECRET[:4] if API_SECRET else 'None'}")
-print(f"DEBUG: Testnet Mode: {TESTNET}")
+
+
 
 
 class SimpleBybitClient:
