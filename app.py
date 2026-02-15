@@ -84,7 +84,8 @@ def index():
         positions_data=positions_data,
         closed_pnl_data=closed_pnl_data,
         wallet_raw=wallet_resp,
-        positions_raw=positions_resp
+        positions_raw=positions_resp,
+        data_error=data.get('error')
     )
 
 @app.route('/api/data')

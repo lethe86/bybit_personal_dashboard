@@ -7,24 +7,24 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Force load from current directory
-env_path = os.path.join(os.getcwd(), '.env')
-load_dotenv(env_path)
+# Handle environment variables
+load_dotenv()
 
-API_KEY = os.getenv('BYBIT_API_KEY') or os.getenv('API_KEY')
-API_SECRET = os.getenv('BYBIT_API_SECRET') or os.getenv('API_SECRET')
-TESTNET = os.getenv('BYBIT_TESTNET', 'true').lower() == 'true'
-
-
-
-
+def get_env_var(key, default=None):
+    """Robustly fetch environment variables."""
+    # Try multiple common prefixes or exact match
+    val = os.environ.get(f"BYBIT_{key}") or os.environ.get(key) or default
+    return val
 
 class SimpleBybitClient:
-    def __init__(self, api_key, api_secret, testnet=False):
-        self.api_key = api_key
-        self.api_secret = api_secret
-        self.testnet = testnet
-        self.base_url = "https://api-testnet.bybit.com" if testnet else "https://api.bybit.com"
+    def __init__(self, api_key=None, api_secret=None, testnet=None):
+        self.api_key = api_key or get_env_var('API_KEY')
+        self.api_secret = api_secret or get_env_var('API_SECRET')
+        
+        testnet_val = str(get_env_var('TESTNET', 'true')).lower()
+        self.testnet = testnet if testnet is not None else (testnet_val == 'true')
+
+        self.base_url = "https://api-testnet.bybit.com" if self.testnet else "https://api.bybit.com"
         self.session = requests.Session()
         self.recv_window = str(5000)
         self.time_offset = 0
@@ -33,12 +33,11 @@ class SimpleBybitClient:
     def sync_time(self):
         try:
             time_url = self.base_url + "/v5/market/time"
-            resp = self.session.get(time_url)
+            resp = self.session.get(time_url, timeout=5)
             if resp.status_code == 200:
                 server_time = int(resp.json()['result']['timeSecond']) * 1000
                 local_time = int(time.time() * 1000)
                 self.time_offset = server_time - local_time
-                print(f"DEBUG: Time synchronized. Offset: {self.time_offset}ms")
         except Exception as e:
             print(f"DEBUG: Time sync failed: {e}")
 
@@ -71,10 +70,9 @@ class SimpleBybitClient:
         }
         
         url = self.base_url + endpoint + "?" + payload
-        url = self.base_url + endpoint + "?" + payload
         
         try:
-            response = self.session.request(method, url, headers=headers)
+            response = self.session.request(method, url, headers=headers, timeout=10)
             return response.json()
         except Exception as e:
             return {"retCode": -1, "retMsg": str(e)}
@@ -105,8 +103,6 @@ class SimpleBybitClient:
         end_time = int(time.time() * 1000)
         start_time = int(start_of_month.timestamp() * 1000)
         
-        print(f"DEBUG: Fetching history from {start_of_month} ({start_time}) to NOW ({end_time})")
-        
         all_records = []
         # Chunk 7 days (604800000 ms)
         chunk_size = 7 * 24 * 60 * 60 * 1000
@@ -129,36 +125,36 @@ class SimpleBybitClient:
                 resp = self._request("GET", "/v5/position/closed-pnl", params)
                 if resp.get('retCode') == 0:
                     records = resp.get('result', {}).get('list', [])
-                    # Append new records
                     all_records.extend(records)
             except Exception as e:
                 print(f"Error fetching PnL chunk: {e}")
             
             current_end = current_start # Move window back
             
-        # Deduplicate by orderId just in case of overlap
+        # Deduplicate
         seen_ids = set()
         unique_records = []
         for rec in all_records:
-            if rec['orderId'] not in seen_ids:
-                seen_ids.add(rec['orderId'])
+            if rec.get('orderId') not in seen_ids:
+                seen_ids.add(rec.get('orderId'))
                 unique_records.append(rec)
         
-        # Sort by updatedTime descending
         unique_records.sort(key=lambda x: int(x.get('updatedTime', 0)), reverse=True)
-            
         return {"retCode": 0, "result": {"list": unique_records}}
 
 def get_bybit_client():
-    return SimpleBybitClient(API_KEY, API_SECRET, TESTNET)
+    return SimpleBybitClient()
 
 def get_account_info():
     try:
         client = get_bybit_client()
+        # Basic validation: ensure we have keys
+        if not client.api_key or not client.api_secret:
+            return {"error": "API Key or Secret is missing from environment variables."}
+
         wallet = client.get_wallet_balance(accountType="UNIFIED")
-        positions = client.get_positions(category="linear", settleCoin="USDT") # Defaulting to USDT Linear perps
+        positions = client.get_positions(category="linear", settleCoin="USDT")
         closed_pnl = client.get_closed_pnl_history()
         return {"wallet": wallet, "positions": positions, "closed_pnl": closed_pnl}
     except Exception as e:
-        print(f"Error getting account info: {e}")
-        return {}
+        return {"error": str(e)}

@@ -68,6 +68,13 @@
             <span id="last-updated" style="font-size: 0.9em; color: #666;">Last Updated: -</span>
         </div>
 
+        {% if data_error %}
+        <div class="error" style="margin-top: 20px;">
+            <p><strong>System Error:</strong> {{ data_error }}</p>
+            <p>Please check your Vercel Environment Variables (BYBIT_API_KEY, BYBIT_API_SECRET).</p>
+        </div>
+        {% endif %}
+
         <div id="wallet-section">
             {% if wallet_data %}
             <table>
@@ -90,7 +97,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            {% elif raw_data and raw_data.retCode == 0 %}
+            {% elif wallet_raw and wallet_raw.retCode == 0 %}
             <div class="error" style="background: #e6f7ff; color: #0066cc;">
                 <p><strong>Wallet is connected but empty.</strong></p>
                 <p>No assets found in your Unified Trading Account.</p>
@@ -98,6 +105,9 @@
             {% else %}
             <div class="error">
                 <p>No wallet data available or API error.</p>
+                {% if wallet_raw and wallet_raw.retMsg %}
+                <p><small>Bybit Error: {{ wallet_raw.retMsg }} (Code: {{ wallet_raw.retCode }})</small></p>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -152,6 +162,9 @@
             {% else %}
             <div class="error">
                 <p>Error fetching positions.</p>
+                {% if positions_raw and positions_raw.retMsg %}
+                <p><small>Bybit Error: {{ positions_raw.retMsg }} (Code: {{ positions_raw.retCode }})</small></p>
+                {% endif %}
             </div>
             {% endif %}
         </div>
