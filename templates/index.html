@@ -15,7 +15,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             padding: 20px;
@@ -62,83 +62,263 @@
 
 <body>
     <div class="container">
-        <h1>Bybit - Unified Account Wallet</h1>
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h1 style="border: none; padding: 0; margin: 0;">Bybit - Unified Account Wallet</h1>
+            <span id="last-updated" style="font-size: 0.9em; color: #666;">Last Updated: -</span>
+        </div>
 
-        {% if wallet_data %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Coin</th>
-                    <th>Equity</th>
-                    <th>Wallet Balance</th>
-                    <th>USD Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in wallet_data %}
-                <tr>
-                    <td><strong>{{ item.coin }}</strong></td>
-                    <td>{{ item.equity }}</td>
-                    <td>{{ item.wallet_balance }}</td>
-                    <td>{{ item.usd_value }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% elif raw_data and raw_data.retCode == 0 %}
-        <div class="error" style="background: #e6f7ff; color: #0066cc;">
-            <p><strong>Wallet is connected but empty.</strong></p>
-            <p>No assets found in your Unified Trading Account.</p>
+        <div id="wallet-section">
+            {% if wallet_data %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Coin</th>
+                        <th>Equity</th>
+                        <th>Wallet Balance</th>
+                        <th>USD Value</th>
+                    </tr>
+                </thead>
+                <tbody id="wallet-body">
+                    {% for item in wallet_data %}
+                    <tr>
+                        <td><strong>{{ item.coin }}</strong></td>
+                        <td>{{ item.equity }}</td>
+                        <td>{{ item.wallet_balance }}</td>
+                        <td>{{ item.usd_value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% elif raw_data and raw_data.retCode == 0 %}
+            <div class="error" style="background: #e6f7ff; color: #0066cc;">
+                <p><strong>Wallet is connected but empty.</strong></p>
+                <p>No assets found in your Unified Trading Account.</p>
+            </div>
+            {% else %}
+            <div class="error">
+                <p>No wallet data available or API error.</p>
+            </div>
+            {% endif %}
         </div>
-        <div style="margin-top: 20px;">
-            <h3>Raw API Response:</h3>
-            <pre>{{ raw_data | tojson(indent=2) }}</pre>
-        </div>
-        {% else %}
-        <div class="error">
-            <p>No wallet data available or API error.</p>
-            <p><strong>Raw Response:</strong></p>
-            <pre>{{ raw_data | tojson(indent=2) }}</pre>
-        </div>
-        {% endif %}
 
         <h1>Open Positions</h1>
-        {% if positions_data %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Symbol</th>
-                    <th>Side</th>
-                    <th>Size</th>
-                    <th>Entry Price</th>
-                    <th>Mark Price</th>
-                    <th>P&L</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pos in positions_data %}
-                <tr>
-                    <td><strong>{{ pos.symbol }}</strong></td>
-                    <td style="color: {{ 'green' if pos.side == 'Buy' else 'red' }}">{{ pos.side }}</td>
-                    <td>{{ pos.size }}</td>
-                    <td>{{ pos.entry_price }}</td>
-                    <td>{{ pos.mark_price }}</td>
-                    <td style="color: {{ 'green' if pos.pnl|float > 0 else 'red' }}">{{ pos.pnl }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% elif positions_raw and positions_raw.retCode == 0 %}
-        <div class="error" style="background: #e6f7ff; color: #0066cc;">
-            <p><strong>No open positions.</strong></p>
+        <div id="positions-section">
+            {% if positions_data %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Size</th>
+                        <th>Entry Price</th>
+                        <th>Mark Price</th>
+                        <th>Liq Price</th>
+                        <th>BrkEven</th>
+                        <th>IM</th>
+                        <th>MM</th>
+                        <th>TP</th>
+                        <th>SL</th>
+                        <th>Val</th>
+                        <th>Lev</th>
+                        <th>P&L</th>
+                    </tr>
+                </thead>
+                <tbody id="positions-body">
+                    {% for pos in positions_data %}
+                    <tr>
+                        <td><strong>{{ pos.symbol }}</strong></td>
+                        <td style="color: {{ 'green' if pos.side == 'Buy' else 'red' }}">{{ pos.side }}</td>
+                        <td>{{ pos.size }}</td>
+                        <td>{{ pos.entry_price }}</td>
+                        <td>{{ pos.mark_price }}</td>
+                        <td>{{ pos.liq_price }}</td>
+                        <td>{{ pos.break_even_price }}</td>
+                        <td>{{ pos.im }}</td>
+                        <td>{{ pos.mm }}</td>
+                        <td>{{ pos.tp }}</td>
+                        <td>{{ pos.sl }}</td>
+                        <td>{{ pos.position_value }}</td>
+                        <td>{{ pos.leverage }}x</td>
+                        <td style="color: {{ 'green' if pos.pnl|float > 0 else 'red' }}">{{ pos.pnl }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% elif positions_raw and positions_raw.retCode == 0 %}
+            <div class="error" style="background: #e6f7ff; color: #0066cc;">
+                <p><strong>No open positions.</strong></p>
+            </div>
+            {% else %}
+            <div class="error">
+                <p>Error fetching positions.</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="error">
-            <p>Error fetching positions.</p>
-            <pre>{{ positions_raw | tojson(indent=2) }}</pre>
+
+        <h1>Recent Closed Positions (PnL)</h1>
+        <div id="closed-pnl-section">
+            <table id="closed-pnl-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Qty</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>Lev</th>
+                        <th>Realized PnL</th>
+                    </tr>
+                </thead>
+                <tbody id="closed-pnl-body">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+
+            <div id="pagination-controls"
+                style="margin-top: 10px; display: flex; justify-content: center; gap: 10px; align-items: center; display: none;">
+                <button id="prev-btn" onclick="changePage(-1)">Previous</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-btn" onclick="changePage(1)">Next</button>
+            </div>
+
+            <div id="no-closed-pnl" class="error"
+                style="display: none; background: #fdfdfd; color: #666; border: 1px solid #eee;">
+                <p>No recently closed positions found.</p>
+            </div>
         </div>
-        {% endif %}
     </div>
+
+    <script>
+        let allClosedPnlData = [];
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        const formatNum = (num) => {
+            if (num === '' || num === undefined || num === null) return '-';
+            const n = parseFloat(num);
+            if (isNaN(n)) return num;
+            return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        function updateDashboard() {
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    // Update Timestamp
+                    const date = new Date(data.timestamp * 1000);
+                    document.getElementById('last-updated').textContent = 'Last Updated: ' + date.toLocaleTimeString();
+
+                    // Update Wallet Table
+                    const walletBody = document.getElementById('wallet-body');
+                    if (walletBody && data.wallet.length > 0) {
+                        walletBody.innerHTML = data.wallet.map(item => `
+                            <tr>
+                                <td><strong>${item.coin}</strong></td>
+                                <td>${formatNum(item.equity)}</td>
+                                <td>${formatNum(item.wallet_balance)}</td>
+                                <td>${formatNum(item.usd_value)}</td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    // Update Positions Table
+                    const positionsBody = document.getElementById('positions-body');
+                    if (positionsBody) {
+                        if (data.positions.length > 0) {
+                            positionsBody.innerHTML = data.positions.map(pos => `
+                                <tr>
+                                    <td><strong>${pos.symbol}</strong></td>
+                                    <td style="color: ${pos.side === 'Buy' ? 'green' : 'red'}">${pos.side}</td>
+                                    <td>${formatNum(pos.size)}</td>
+                                    <td>${formatNum(pos.entry_price)}</td>
+                                    <td>${formatNum(pos.mark_price)}</td>
+                                    <td>${formatNum(pos.liq_price)}</td>
+                                    <td>${formatNum(pos.break_even_price)}</td>
+                                    <td>${formatNum(pos.im)}</td>
+                                    <td>${formatNum(pos.mm)}</td>
+                                    <td>${formatNum(pos.tp)}</td>
+                                    <td>${formatNum(pos.sl)}</td>
+                                    <td>${formatNum(pos.position_value)}</td>
+                                    <td>${pos.leverage}x</td>
+                                    <td style="color: ${parseFloat(pos.pnl) > 0 ? 'green' : 'red'}">${formatNum(pos.pnl)}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            positionsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No open positions</td></tr>';
+                        }
+                    }
+
+                    // Update Closed PnL Data
+                    if (data.closed_pnl) {
+                        allClosedPnlData = data.closed_pnl;
+                        renderClosedPnlTable();
+                    }
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function renderClosedPnlTable() {
+            const closedPnlBody = document.getElementById('closed-pnl-body');
+            const noDataDiv = document.getElementById('no-closed-pnl');
+            const table = document.getElementById('closed-pnl-table');
+            const controls = document.getElementById('pagination-controls');
+
+            if (allClosedPnlData && allClosedPnlData.length > 0) {
+                noDataDiv.style.display = 'none';
+                table.style.display = '';
+                controls.style.display = 'flex';
+
+                // Calculate pagination
+                const totalPages = Math.ceil(allClosedPnlData.length / itemsPerPage);
+                if (currentPage > totalPages) currentPage = totalPages;
+                if (currentPage < 1) currentPage = 1;
+
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageData = allClosedPnlData.slice(startIndex, endIndex);
+
+                // Render Rows
+                closedPnlBody.innerHTML = pageData.map(pnl => {
+                    const pnlDate = new Date(parseInt(pnl.created_time));
+                    return `
+                    <tr>
+                        <td>${pnlDate.toLocaleString()}</td>
+                        <td><strong>${pnl.symbol}</strong></td>
+                        <td style="color: ${pnl.side === 'Buy' ? 'green' : 'red'}">${pnl.side}</td>
+                        <td>${formatNum(pnl.qty)}</td>
+                        <td>${formatNum(pnl.entry_price)}</td>
+                        <td>${formatNum(pnl.exit_price)}</td>
+                        <td>${pnl.leverage}x</td>
+                        <td style="color: ${parseFloat(pnl.closed_pnl) > 0 ? 'green' : 'red'}">${formatNum(pnl.closed_pnl)}</td>
+                    </tr>
+                `}).join('');
+
+                // Update Controls
+                document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('prev-btn').disabled = currentPage === 1;
+                document.getElementById('next-btn').disabled = currentPage === totalPages;
+
+            } else {
+                noDataDiv.style.display = 'block';
+                table.style.display = 'none';
+                controls.style.display = 'none';
+                closedPnlBody.innerHTML = '';
+            }
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderClosedPnlTable();
+        }
+
+        // Update every 5 seconds
+        setInterval(updateDashboard, 5000);
+
+        // Initial call
+        updateDashboard();
+    </script>
 </body>
 
 </html>

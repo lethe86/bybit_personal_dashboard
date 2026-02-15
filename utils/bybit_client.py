@@ -4,6 +4,7 @@ import json
 import time
 import requests
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Force load from current directory
@@ -86,11 +87,74 @@ class SimpleBybitClient:
         params.update(kwargs)
         return self._request("GET", "/v5/position/list", params)
 
+    def get_closed_pnl(self, category="linear", limit=50, **kwargs):
+        params = {"category": category, "limit": limit}
+        params.update(kwargs)
+        return self._request("GET", "/v5/position/closed-pnl", params)
+
+    def get_closed_pnl_history(self):
+        """Fetch closed PnL for the current month by chunking 7-day windows."""
+        now_dt = datetime.now()
+        # First day of current month at 00:00:00
+        start_of_month = now_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        end_time = int(time.time() * 1000)
+        start_time = int(start_of_month.timestamp() * 1000)
+        
+        print(f"DEBUG: Fetching history from {start_of_month} ({start_time}) to NOW ({end_time})")
+        
+        all_records = []
+        # Chunk 7 days (604800000 ms)
+        chunk_size = 7 * 24 * 60 * 60 * 1000
+        
+        current_end = end_time
+        
+        # We iterate backwards from now until we hit the start of the month
+        while current_end > start_time:
+            current_start = max(start_time, current_end - chunk_size)
+            
+            # Fetch for this chunk
+            params = {
+                "category": "linear",
+                "limit": 50,
+                "startTime": current_start,
+                "endTime": current_end
+            }
+            
+            try:
+                resp = self._request("GET", "/v5/position/closed-pnl", params)
+                if resp.get('retCode') == 0:
+                    records = resp.get('result', {}).get('list', [])
+                    # Append new records
+                    all_records.extend(records)
+            except Exception as e:
+                print(f"Error fetching PnL chunk: {e}")
+            
+            current_end = current_start # Move window back
+            
+        # Deduplicate by orderId just in case of overlap
+        seen_ids = set()
+        unique_records = []
+        for rec in all_records:
+            if rec['orderId'] not in seen_ids:
+                seen_ids.add(rec['orderId'])
+                unique_records.append(rec)
+        
+        # Sort by updatedTime descending
+        unique_records.sort(key=lambda x: int(x.get('updatedTime', 0)), reverse=True)
+            
+        return {"retCode": 0, "result": {"list": unique_records}}
+
 def get_bybit_client():
     return SimpleBybitClient(API_KEY, API_SECRET, TESTNET)
 
 def get_account_info():
-    client = get_bybit_client()
-    wallet = client.get_wallet_balance(accountType="UNIFIED")
-    positions = client.get_positions(category="linear", settleCoin="USDT") # Defaulting to USDT Linear perps
-    return {"wallet": wallet, "positions": positions}
+    try:
+        client = get_bybit_client()
+        wallet = client.get_wallet_balance(accountType="UNIFIED")
+        positions = client.get_positions(category="linear", settleCoin="USDT") # Defaulting to USDT Linear perps
+        closed_pnl = client.get_closed_pnl_history()
+        return {"wallet": wallet, "positions": positions, "closed_pnl": closed_pnl}
+    except Exception as e:
+        print(f"Error getting account info: {e}")
+        return {}
