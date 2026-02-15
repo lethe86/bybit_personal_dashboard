@@ -1,0 +1,21 @@
+# Environment Variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+
+# Project Logs and Debug
+*.log
+app_debug.json
+output.txt
+verify_html.py
+test_request.py

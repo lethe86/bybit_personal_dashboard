@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bybit Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: #eee;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Bybit - Unified Account Wallet</h1>
+
+        {% if wallet_data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Coin</th>
+                    <th>Equity</th>
+                    <th>Wallet Balance</th>
+                    <th>USD Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in wallet_data %}
+                <tr>
+                    <td><strong>{{ item.coin }}</strong></td>
+                    <td>{{ item.equity }}</td>
+                    <td>{{ item.wallet_balance }}</td>
+                    <td>{{ item.usd_value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif raw_data and raw_data.retCode == 0 %}
+        <div class="error" style="background: #e6f7ff; color: #0066cc;">
+            <p><strong>Wallet is connected but empty.</strong></p>
+            <p>No assets found in your Unified Trading Account.</p>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3>Raw API Response:</h3>
+            <pre>{{ raw_data | tojson(indent=2) }}</pre>
+        </div>
+        {% else %}
+        <div class="error">
+            <p>No wallet data available or API error.</p>
+            <p><strong>Raw Response:</strong></p>
+            <pre>{{ raw_data | tojson(indent=2) }}</pre>
+        </div>
+        {% endif %}
+
+        <h1>Open Positions</h1>
+        {% if positions_data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Size</th>
+                    <th>Entry Price</th>
+                    <th>Mark Price</th>
+                    <th>P&L</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pos in positions_data %}
+                <tr>
+                    <td><strong>{{ pos.symbol }}</strong></td>
+                    <td style="color: {{ 'green' if pos.side == 'Buy' else 'red' }}">{{ pos.side }}</td>
+                    <td>{{ pos.size }}</td>
+                    <td>{{ pos.entry_price }}</td>
+                    <td>{{ pos.mark_price }}</td>
+                    <td style="color: {{ 'green' if pos.pnl|float > 0 else 'red' }}">{{ pos.pnl }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif positions_raw and positions_raw.retCode == 0 %}
+        <div class="error" style="background: #e6f7ff; color: #0066cc;">
+            <p><strong>No open positions.</strong></p>
+        </div>
+        {% else %}
+        <div class="error">
+            <p>Error fetching positions.</p>
+            <pre>{{ positions_raw | tojson(indent=2) }}</pre>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>
