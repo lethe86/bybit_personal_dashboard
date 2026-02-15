@@ -21,7 +21,7 @@ class SimpleBybitClient:
         self.api_key = api_key or get_env_var('API_KEY')
         self.api_secret = api_secret or get_env_var('API_SECRET')
         
-        testnet_val = str(get_env_var('TESTNET', 'true')).lower()
+        testnet_val = str(get_env_var('TESTNET', 'false')).lower()
         self.testnet = testnet if testnet is not None else (testnet_val == 'true')
 
         self.base_url = "https://api-testnet.bybit.com" if self.testnet else "https://api.bybit.com"
@@ -69,13 +69,26 @@ class SimpleBybitClient:
             'Content-Type': 'application/json'
         }
         
-        url = self.base_url + endpoint + "?" + payload
+        url = self.base_url + endpoint
+        if payload:
+            url += "?" + payload
         
         try:
             response = self.session.request(method, url, headers=headers, timeout=10)
-            return response.json()
+            if response.status_code != 200:
+                return {
+                    "retCode": response.status_code, 
+                    "retMsg": f"HTTP Error {response.status_code}: {response.text[:100]}"
+                }
+            try:
+                return response.json()
+            except json.JSONDecodeError:
+                return {
+                    "retCode": -1, 
+                    "retMsg": f"Invalid JSON response: {response.text[:100]}"
+                }
         except Exception as e:
-            return {"retCode": -1, "retMsg": str(e)}
+            return {"retCode": -1, "retMsg": f"Connection Error: {str(e)}"}
 
     def get_wallet_balance(self, accountType="UNIFIED", **kwargs):
         params = {"accountType": accountType}
