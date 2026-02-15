@@ -66,7 +66,8 @@ class SimpleBybitClient:
             'X-BAPI-SIGN-TYPE': '2',
             'X-BAPI-TIMESTAMP': timestamp,
             'X-BAPI-RECV-WINDOW': self.recv_window,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         
         url = self.base_url + endpoint
