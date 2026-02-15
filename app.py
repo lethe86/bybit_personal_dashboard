@@ -75,14 +75,8 @@ def index():
                 'leverage': pnl.get('leverage', '1')
             })
 
-    import json
-    with open("app_debug.json", "w") as f:
-        json.dump({
-            "wallet": wallet_resp,
-            "positions": positions_resp,
-            "positions_data": positions_data,
-            "closed_pnl": closed_pnl_resp
-        }, f, indent=2)
+    # Debug logging removed for production
+
 
     return render_template(
         'index.html', 
